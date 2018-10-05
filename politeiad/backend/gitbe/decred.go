@@ -1714,11 +1714,15 @@ func (g *gitBackEnd) pluginStartVote(payload string) (string, error) {
 
 	// Make sure vote duration isn't too large. Assume < 2 weeks
 	// XXX calculate this value for testnet instead of using hard coded values.
-	if vote.Vote.Duration < 2016 || vote.Vote.Duration > 2016*2 {
-		// XXX return a user error instead of an internal error
-		return "", fmt.Errorf("invalid duration: %v (%v - %v)",
-			vote.Vote.Duration, 2016, 2016*2)
-	}
+	//if vote.Vote.Duration < 2016 || vote.Vote.Duration > 2016*2 {
+	//	// XXX return a user error instead of an internal error
+	//	return "", fmt.Errorf("invalid duration: %v (%v - %v)",
+	//		vote.Vote.Duration, 2016, 2016*2)
+	//}
+	log.Errorf("========== VOTE DURATION CHECK DISABLED ==========")
+	vote.Vote.Duration = 20
+	log.Errorf("========== VOTE DURATION SET TO %v BLOCKS ==========",
+		vote.Vote.Duration)
 
 	svr := decredplugin.StartVoteReply{
 		Version: decredplugin.VersionStartVoteReply,
