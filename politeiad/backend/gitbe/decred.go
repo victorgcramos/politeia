@@ -109,7 +109,8 @@ var (
 
 	// cached values, requires lock
 	// XXX why is this a pointer? Convert if possible after investigating
-	decredPluginVoteCache = make(map[string]*decredplugin.StartVote) // [token]startvote
+	decredPluginVoteCache         = make(map[string]*decredplugin.StartVote)     // [token]startvote
+	decredPluginVoteSnapshotCache = make(map[string]decredplugin.StartVoteReply) // [token]StartVoteReply
 
 	// Pregenerated journal actions
 	journalAdd     []byte
@@ -1706,6 +1707,9 @@ func (g *gitBackEnd) pluginStartVote(payload string) (string, error) {
 		return "", fmt.Errorf("_updateVettedMetadata: %v", err)
 	}
 
+	// Add vote snapshot to in-memory cache
+	decredPluginVoteSnapshotCache[token] = svr
+
 	log.Infof("Vote started for: %v snapshot %v start %v end %v",
 		token, svr.StartBlockHash, svr.StartBlockHeight,
 		svr.EndHeight)
@@ -1906,6 +1910,55 @@ func (g *gitBackEnd) replayBallot(token string) error {
 	return nil
 }
 
+// voteEndHeight returns the end height for the voting period of the passed in
+// proposal.  This function is expensive due to it's filesystem touches and
+// therefore is lazily cached.
+func (g *gitBackEnd) voteEndHeight(token string) (uint32, error) {
+	g.Lock()
+	defer g.Unlock()
+	if g.shutdown {
+		return 0, backend.ErrShutdown
+	}
+
+	svr, ok := decredPluginVoteSnapshotCache[token]
+	if !ok {
+		// git checkout master
+		err := g.gitCheckout(g.unvetted, "master")
+		if err != nil {
+			return 0, err
+		}
+
+		// git pull --ff-only --rebase
+		err = g.gitPull(g.unvetted, true)
+		if err != nil {
+			return 0, err
+		}
+
+		// Load md stream
+		f, err := os.Open(mdFilename(g.vetted, token,
+			decredplugin.MDStreamVoteSnapshot))
+		if err != nil {
+			return 0, err
+		}
+		defer f.Close()
+
+		d := json.NewDecoder(f)
+		err = d.Decode(&svr)
+		if err != nil {
+			return 0, err
+		}
+
+		decredPluginVoteSnapshotCache[token] = svr
+	}
+
+	endHeight, err := strconv.ParseUint(svr.EndHeight, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return uint32(endHeight), nil
+}
+
 // voteExists verifies if a vote exists in the memory cache. If the cache does
 // not exists it is replayed from disk. If the vote exists in the cache the
 // functions returns true.
@@ -1939,6 +1992,12 @@ func (g *gitBackEnd) pluginBallot(payload string) (string, error) {
 	fi, err := identity.UnmarshalFullIdentity([]byte(fiJSON))
 	if err != nil {
 		return "", err
+	}
+
+	// Get best block
+	bb, err := bestBlock()
+	if err != nil {
+		return "", fmt.Errorf("bestBlock: %v", err)
 	}
 
 	// Obtain all largest commitment addresses. Assume everything was sent
@@ -1991,6 +2050,20 @@ func (g *gitBackEnd) pluginBallot(payload string) (string, error) {
 				v.Ticket, v.Token, t, err)
 			br.Receipts[k].Error = fmt.Sprintf("internal error %v",
 				t)
+			continue
+		}
+
+		// Verify voting period has not ended
+		endHeight, err := g.voteEndHeight(v.Token)
+		if err != nil {
+			t := time.Now().Unix()
+			log.Errorf("pluginBallot: voteEndHeight failed %v %v: %v",
+				t, v.Token, err)
+			br.Receipts[k].Error = fmt.Sprintf("internal error %v", t)
+			continue
+		}
+		if bb.Height > endHeight {
+			br.Receipts[k].Error = "vote has ended: " + v.Token
 			continue
 		}
 
