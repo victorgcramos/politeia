@@ -1311,10 +1311,15 @@ func (p *politeiawww) processCommentsGet(token string, u *user.User) (*www.GetCo
 	// Get the last time the user accessed these comments. This is
 	// a public route so a user may not exist.
 	var accessTime int64
+	var readComments []string
 	if u != nil {
 		if u.ProposalCommentsAccessTimes == nil {
 			u.ProposalCommentsAccessTimes = make(map[string]int64)
 		}
+		if u.ReadComments == nil {
+			u.ReadComments = make(map[string][]string)
+		}
+		readComments = u.ReadComments[token]
 		accessTime = u.ProposalCommentsAccessTimes[token]
 		u.ProposalCommentsAccessTimes[token] = time.Now().Unix()
 		err = p.db.UserUpdate(*u)
@@ -1326,6 +1331,7 @@ func (p *politeiawww) processCommentsGet(token string, u *user.User) (*www.GetCo
 	return &www.GetCommentsReply{
 		Comments:   c,
 		AccessTime: accessTime,
+		ReadComments: readComments,
 	}, nil
 }
 
