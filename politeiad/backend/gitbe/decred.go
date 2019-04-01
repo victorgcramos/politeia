@@ -205,7 +205,7 @@ func getDecredPlugin(testnet bool) backend.Plugin {
 func (g *gitBackEnd) initDecredPluginJournals() error {
 	log.Infof("initDecredPlugin")
 
-	// check if backend journal is intialized
+	// check if backend journal is initialized
 	if g.journal == nil {
 		return fmt.Errorf("initDecredPlugin backend journal isn't initialized")
 	}
@@ -463,7 +463,7 @@ func batchTransactions(hashes []string) ([]dcrdataapi.TrimmedTx, error) {
 		return nil, fmt.Errorf("POST request failed: %d", r.StatusCode)
 	}
 
-	// Unmarshal the resonse
+	// Unmarshal the response
 	var ttx []dcrdataapi.TrimmedTx
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&ttx); err != nil {
@@ -1627,7 +1627,7 @@ func (g *gitBackEnd) pluginStartVote(payload string) (string, error) {
 		return "", fmt.Errorf("snapshot %v", err)
 	}
 	if len(snapshot) == 0 {
-		return "", fmt.Errorf("no eligble voters for %v", token)
+		return "", fmt.Errorf("no eligible voters for %v", token)
 	}
 
 	// Make sure vote duration is within min/max range
@@ -2042,19 +2042,6 @@ func (g *gitBackEnd) pluginBallot(payload string) (string, error) {
 			continue
 		}
 
-		// Verify voting period has not ended
-		endHeight, err := g.voteEndHeight(v.Token)
-		if err != nil {
-			t := time.Now().Unix()
-			log.Errorf("pluginBallot: voteEndHeight failed %v %v: %v",
-				t, v.Token, err)
-			br.Receipts[k].Error = fmt.Sprintf("internal error %v", t)
-		}
-		if bb.Height > endHeight {
-			br.Receipts[k].Error = "vote has ended: " + v.Token
-			continue
-		}
-
 		// Replay individual votes journal
 		dup, err := g.voteExists(v)
 		if err != nil {
@@ -2082,6 +2069,21 @@ func (g *gitBackEnd) pluginBallot(payload string) (string, error) {
 				v.Ticket, v.Token, t, err)
 			br.Receipts[k].Error = fmt.Sprintf("internal error %v",
 				t)
+			continue
+		}
+
+		// Verify voting period has not ended
+		endHeight, err := g.voteEndHeight(v.Token)
+		if err != nil {
+			t := time.Now().Unix()
+			log.Errorf("pluginBallot: voteEndHeight %v %v %v %v",
+				v.Ticket, v.Token, t, err)
+			br.Receipts[k].Error = fmt.Sprintf("internal error %v",
+				t)
+			continue
+		}
+		if bb.Height >= endHeight {
+			br.Receipts[k].Error = "vote has ended: " + v.Token
 			continue
 		}
 

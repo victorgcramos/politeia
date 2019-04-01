@@ -22,8 +22,7 @@ import (
 	pd "github.com/decred/politeia/politeiad/api/v1"
 	"github.com/decred/politeia/politeiad/api/v1/identity"
 	"github.com/decred/politeia/politeiad/cache"
-	v1 "github.com/decred/politeia/politeiawww/api/v1"
-	www "github.com/decred/politeia/politeiawww/api/v1"
+	www "github.com/decred/politeia/politeiawww/api/www/v1"
 	"github.com/decred/politeia/politeiawww/user"
 	"github.com/decred/politeia/util"
 )
@@ -857,13 +856,6 @@ func (p *politeiawww) processSetProposalStatus(sps www.SetProposalStatus, u *use
 		}
 	}
 
-	// Ensure user is an admin. Only admins are allowed to change
-	// a proposal status.
-	adminPubKey, ok := user.ActiveIdentityString(u.Identities)
-	if !ok {
-		return nil, fmt.Errorf("invalid admin identity: %v", u.ID)
-	}
-
 	// Handle test case
 	if p.test {
 		var reply www.SetProposalStatusReply
@@ -904,7 +896,7 @@ func (p *politeiawww) processSetProposalStatus(sps www.SetProposalStatus, u *use
 		Version:             VersionMDStreamChanges,
 		Timestamp:           time.Now().Unix(),
 		NewStatus:           newStatus,
-		AdminPubKey:         adminPubKey,
+		AdminPubKey:         u.PublicKey(),
 		StatusChangeMessage: sps.StatusChangeMessage,
 	})
 	if err != nil {
@@ -1037,7 +1029,7 @@ func (p *politeiawww) processSetProposalStatus(sps www.SetProposalStatus, u *use
 	}
 
 	// Fire off proposal status change event
-	p.eventManager._fireEvent(EventTypeProposalStatusChange,
+	p.fireEvent(EventTypeProposalStatusChange,
 		EventDataProposalStatusChange{
 			Proposal:          updatedProp,
 			AdminUser:         u,
@@ -1198,7 +1190,7 @@ func (p *politeiawww) processEditProposal(ep www.EditProposal, u *user.User) (*w
 	}
 
 	// Fire off edit proposal event
-	p.eventManager._fireEvent(EventTypeProposalEdited,
+	p.fireEvent(EventTypeProposalEdited,
 		EventDataProposalEdited{
 			Proposal: updatedProp,
 		},
@@ -1275,7 +1267,7 @@ func (p *politeiawww) processAllUnvetted(u www.GetAllUnvetted) (*www.GetAllUnvet
 }
 
 // ProcessProposalStats returns summary statistics on the number of proposals
-// catagorized by proposal status.
+// categorized by proposal status.
 func (p *politeiawww) processProposalsStats() (*www.ProposalsStatsReply, error) {
 	inv, err := p.cache.InventoryStats()
 	if err != nil {
@@ -1602,19 +1594,19 @@ func (p *politeiawww) processCastVotes(ballot *www.Ballot) (*www.BallotReply, er
 // the user to purchase proposal credits. The user can only have one paywall
 // active at a time.  If no paywall currently exists, a new one is created and
 // the user is added to the paywall pool.
-func (p *politeiawww) processProposalPaywallDetails(u *user.User) (*v1.ProposalPaywallDetailsReply, error) {
+func (p *politeiawww) processProposalPaywallDetails(u *user.User) (*www.ProposalPaywallDetailsReply, error) {
 	log.Tracef("processProposalPaywallDetails")
 
 	// Ensure paywall is enabled
 	if !p.paywallIsEnabled() {
-		return &v1.ProposalPaywallDetailsReply{}, nil
+		return &www.ProposalPaywallDetailsReply{}, nil
 	}
 
 	// Proposal paywalls cannot be generated until the user has paid their
 	// user registration fee.
 	if !p.HasUserPaid(u) {
-		return nil, v1.UserError{
-			ErrorCode: v1.ErrorStatusUserNotPaid,
+		return nil, www.UserError{
+			ErrorCode: www.ErrorStatusUserNotPaid,
 		}
 	}
 
@@ -1631,7 +1623,7 @@ func (p *politeiawww) processProposalPaywallDetails(u *user.User) (*v1.ProposalP
 		}
 	}
 
-	return &v1.ProposalPaywallDetailsReply{
+	return &www.ProposalPaywallDetailsReply{
 		CreditPrice:        pp.CreditPrice,
 		PaywallAddress:     pp.Address,
 		PaywallTxNotBefore: pp.TxNotBefore,
@@ -1640,7 +1632,7 @@ func (p *politeiawww) processProposalPaywallDetails(u *user.User) (*v1.ProposalP
 
 // processProposalPaywallPayment checks if the user has a pending paywall
 // payment and returns the payment details if one is found.
-func (p *politeiawww) processProposalPaywallPayment(u *user.User) (*v1.ProposalPaywallPaymentReply, error) {
+func (p *politeiawww) processProposalPaywallPayment(u *user.User) (*www.ProposalPaywallPaymentReply, error) {
 	log.Tracef("processProposalPaywallPayment")
 
 	var (
@@ -1659,7 +1651,7 @@ func (p *politeiawww) processProposalPaywallPayment(u *user.User) (*v1.ProposalP
 		confirmations = poolMember.txConfirmations
 	}
 
-	return &v1.ProposalPaywallPaymentReply{
+	return &www.ProposalPaywallPaymentReply{
 		TxID:          txID,
 		TxAmount:      txAmount,
 		Confirmations: confirmations,
@@ -1919,14 +1911,12 @@ func (p *politeiawww) processStartVote(sv www.StartVote, u *user.User) (*www.Sta
 		return nil, err
 	}
 
-	if !p.test {
-		p.eventManager._fireEvent(EventTypeProposalVoteStarted,
-			EventDataProposalVoteStarted{
-				AdminUser: u,
-				StartVote: &sv,
-			},
-		)
-	}
+	p.fireEvent(EventTypeProposalVoteStarted,
+		EventDataProposalVoteStarted{
+			AdminUser: u,
+			StartVote: &sv,
+		},
+	)
 
 	// return a copy
 	rv := convertStartVoteReplyFromDecred(*vr)

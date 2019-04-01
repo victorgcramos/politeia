@@ -96,6 +96,18 @@ const (
 	// PolicyMinUsernameLength is the min length of a username
 	PolicyMinUsernameLength = 3
 
+	// PolicyMaxUsernameLength is the max length of a contractor name
+	PolicyMaxNameLength = 50
+
+	// PolicyMinUsernameLength is the min length of a contractor name
+	PolicyMinNameLength = 3
+
+	// PolicyMaxUsernameLength is the max length of a contractor location
+	PolicyMaxLocationLength = 100
+
+	// PolicyMinUsernameLength is the min length of a contractor location
+	PolicyMinLocationLength = 3
+
 	// PolicyMaxProposalNameLength is the max length of a proposal name
 	PolicyMaxProposalNameLength = 80
 
@@ -105,6 +117,18 @@ const (
 	// PolicyMaxCommentLength is the maximum number of characters
 	// accepted for comments
 	PolicyMaxCommentLength = 8000
+
+	// PolicyInvoiceCommentChar is the character which, when used as the first
+	// character of a line, denotes that entire line as a comment.
+	PolicyInvoiceCommentChar rune = '#'
+
+	// PolicyInvoiceFieldDelimiterChar is the character that delimits field
+	// values for each line item in the CSV.
+	PolicyInvoiceFieldDelimiterChar rune = ','
+
+	// PolicyInvoiceLineItemCount is the number of expected fields in the raw
+	// csv line items
+	PolicyInvoiceLineItemCount = 6
 
 	// ProposalListPageSize is the maximum number of proposals returned
 	// for the routes that return lists of proposals
@@ -175,6 +199,16 @@ const (
 	ErrorStatusInvalidLikeCommentAction    ErrorStatusT = 57
 	ErrorStatusInvalidCensorshipToken      ErrorStatusT = 58
 	ErrorStatusEmailAlreadyVerified        ErrorStatusT = 59
+
+	// CMS Errors
+	ErrorStatusMalformedName                  ErrorStatusT = 60
+	ErrorStatusMalformedLocation              ErrorStatusT = 61
+	ErrorStatusInvoiceNotFound                ErrorStatusT = 62
+	ErrorStatusInvalidMonthYearRequest        ErrorStatusT = 63
+	ErrorStatusMalformedInvoiceFile           ErrorStatusT = 64
+	ErrorStatusInvalidInvoiceStatusTransition ErrorStatusT = 65
+	ErrorStatusReasonNotProvided              ErrorStatusT = 66
+	ErrorStatusInvoiceDuplicate               ErrorStatusT = 67
 
 	// Proposal state codes
 	//
@@ -248,6 +282,12 @@ var (
 	PolicyUsernameSupportedChars = []string{
 		"a-z", "0-9", ".", ",", ":", ";", "-", "@", "+", "(", ")", "_"}
 
+	// PolicyNameLocationSupportedChars is the regular expression of a valid
+	// name or location for registering users on cms.
+	PolicyNameLocationSupportedChars = []string{
+		"A-z", "0-9", "&", ".", ",", ":", ";", "-", " ", "@", "+", "#", "/",
+		"(", ")", "!", "?", "\"", "'"}
+
 	// PoliteiaWWWAPIRoute is the prefix to the API route
 	PoliteiaWWWAPIRoute = fmt.Sprintf("/v%v", PoliteiaWWWAPIVersion)
 
@@ -257,66 +297,74 @@ var (
 
 	// ErrorStatus converts error status codes to human readable text.
 	ErrorStatus = map[ErrorStatusT]string{
-		ErrorStatusInvalid:                     "invalid error status",
-		ErrorStatusInvalidEmailOrPassword:      "invalid email or password",
-		ErrorStatusMalformedEmail:              "malformed email",
-		ErrorStatusVerificationTokenInvalid:    "invalid verification token",
-		ErrorStatusVerificationTokenExpired:    "expired verification token",
-		ErrorStatusProposalMissingFiles:        "missing proposal files",
-		ErrorStatusProposalNotFound:            "proposal not found",
-		ErrorStatusProposalDuplicateFilenames:  "duplicate proposal files",
-		ErrorStatusProposalInvalidTitle:        "invalid proposal title",
-		ErrorStatusMaxMDsExceededPolicy:        "maximum markdown files exceeded",
-		ErrorStatusMaxImagesExceededPolicy:     "maximum image files exceeded",
-		ErrorStatusMaxMDSizeExceededPolicy:     "maximum markdown file size exceeded",
-		ErrorStatusMaxImageSizeExceededPolicy:  "maximum image file size exceeded",
-		ErrorStatusMalformedPassword:           "malformed password",
-		ErrorStatusCommentNotFound:             "comment not found",
-		ErrorStatusInvalidFilename:             "invalid filename",
-		ErrorStatusInvalidFileDigest:           "invalid file digest",
-		ErrorStatusInvalidBase64:               "invalid base64 file content",
-		ErrorStatusInvalidMIMEType:             "invalid MIME type detected for file",
-		ErrorStatusUnsupportedMIMEType:         "unsupported MIME type for file",
-		ErrorStatusInvalidPropStatusTransition: "invalid proposal status",
-		ErrorStatusInvalidPublicKey:            "invalid public key",
-		ErrorStatusNoPublicKey:                 "no active public key",
-		ErrorStatusInvalidSignature:            "invalid signature",
-		ErrorStatusInvalidInput:                "invalid input",
-		ErrorStatusInvalidSigningKey:           "invalid signing key",
-		ErrorStatusCommentLengthExceededPolicy: "maximum comment length exceeded",
-		ErrorStatusUserNotFound:                "user not found",
-		ErrorStatusWrongStatus:                 "wrong status",
-		ErrorStatusNotLoggedIn:                 "user not logged in",
-		ErrorStatusUserNotPaid:                 "user hasn't paid paywall",
-		ErrorStatusReviewerAdminEqualsAuthor:   "user cannot change the status of his own proposal",
-		ErrorStatusMalformedUsername:           "malformed username",
-		ErrorStatusDuplicateUsername:           "duplicate username",
-		ErrorStatusVerificationTokenUnexpired:  "verification token not yet expired",
-		ErrorStatusCannotVerifyPayment:         "cannot verify payment at this time",
-		ErrorStatusDuplicatePublicKey:          "public key already taken by another user",
-		ErrorStatusInvalidPropVoteStatus:       "invalid proposal vote status",
-		ErrorStatusUserLocked:                  "user locked due to too many login attempts",
-		ErrorStatusNoProposalCredits:           "no proposal credits",
-		ErrorStatusInvalidUserManageAction:     "invalid user edit action",
-		ErrorStatusUserActionNotAllowed:        "user action is not allowed",
-		ErrorStatusWrongVoteStatus:             "wrong proposal vote status",
-		ErrorStatusCannotCommentOnProp:         "cannot comment on proposal",
-		ErrorStatusCannotVoteOnPropComment:     "cannot vote on proposal comment",
-		ErrorStatusChangeMessageCannotBeBlank:  "status change message cannot be blank",
-		ErrorStatusCensorReasonCannotBeBlank:   "censor comment reason cannot be blank",
-		ErrorStatusCannotCensorComment:         "cannot censor comment",
-		ErrorStatusUserNotAuthor:               "user is not the proposal author",
-		ErrorStatusVoteNotAuthorized:           "vote has not been authorized",
-		ErrorStatusVoteAlreadyAuthorized:       "vote has already been authorized",
-		ErrorStatusInvalidAuthVoteAction:       "invalid authorize vote action",
-		ErrorStatusUserDeactivated:             "user account is deactivated",
-		ErrorStatusInvalidPropVoteBits:         "invalid proposal vote option bits",
-		ErrorStatusInvalidPropVoteParams:       "invalid proposal vote parameters",
-		ErrorStatusEmailNotVerified:            "email address is not verified",
-		ErrorStatusInvalidUUID:                 "invalid user UUID",
-		ErrorStatusInvalidLikeCommentAction:    "invalid like comment action",
-		ErrorStatusInvalidCensorshipToken:      "invalid proposal censorship token",
-		ErrorStatusEmailAlreadyVerified:        "email address is already verified",
+		ErrorStatusInvalid:                        "invalid error status",
+		ErrorStatusInvalidEmailOrPassword:         "invalid email or password",
+		ErrorStatusMalformedEmail:                 "malformed email",
+		ErrorStatusVerificationTokenInvalid:       "invalid verification token",
+		ErrorStatusVerificationTokenExpired:       "expired verification token",
+		ErrorStatusProposalMissingFiles:           "missing proposal files",
+		ErrorStatusProposalNotFound:               "proposal not found",
+		ErrorStatusProposalDuplicateFilenames:     "duplicate proposal files",
+		ErrorStatusProposalInvalidTitle:           "invalid proposal title",
+		ErrorStatusMaxMDsExceededPolicy:           "maximum markdown files exceeded",
+		ErrorStatusMaxImagesExceededPolicy:        "maximum image files exceeded",
+		ErrorStatusMaxMDSizeExceededPolicy:        "maximum markdown file size exceeded",
+		ErrorStatusMaxImageSizeExceededPolicy:     "maximum image file size exceeded",
+		ErrorStatusMalformedPassword:              "malformed password",
+		ErrorStatusCommentNotFound:                "comment not found",
+		ErrorStatusInvalidFilename:                "invalid filename",
+		ErrorStatusInvalidFileDigest:              "invalid file digest",
+		ErrorStatusInvalidBase64:                  "invalid base64 file content",
+		ErrorStatusInvalidMIMEType:                "invalid MIME type detected for file",
+		ErrorStatusUnsupportedMIMEType:            "unsupported MIME type for file",
+		ErrorStatusInvalidPropStatusTransition:    "invalid proposal status",
+		ErrorStatusInvalidPublicKey:               "invalid public key",
+		ErrorStatusNoPublicKey:                    "no active public key",
+		ErrorStatusInvalidSignature:               "invalid signature",
+		ErrorStatusInvalidInput:                   "invalid input",
+		ErrorStatusInvalidSigningKey:              "invalid signing key",
+		ErrorStatusCommentLengthExceededPolicy:    "maximum comment length exceeded",
+		ErrorStatusUserNotFound:                   "user not found",
+		ErrorStatusWrongStatus:                    "wrong status",
+		ErrorStatusNotLoggedIn:                    "user not logged in",
+		ErrorStatusUserNotPaid:                    "user hasn't paid paywall",
+		ErrorStatusReviewerAdminEqualsAuthor:      "user cannot change the status of his own proposal",
+		ErrorStatusMalformedUsername:              "malformed username",
+		ErrorStatusDuplicateUsername:              "duplicate username",
+		ErrorStatusVerificationTokenUnexpired:     "verification token not yet expired",
+		ErrorStatusCannotVerifyPayment:            "cannot verify payment at this time",
+		ErrorStatusDuplicatePublicKey:             "public key already taken by another user",
+		ErrorStatusInvalidPropVoteStatus:          "invalid proposal vote status",
+		ErrorStatusUserLocked:                     "user locked due to too many login attempts",
+		ErrorStatusNoProposalCredits:              "no proposal credits",
+		ErrorStatusInvalidUserManageAction:        "invalid user edit action",
+		ErrorStatusUserActionNotAllowed:           "user action is not allowed",
+		ErrorStatusWrongVoteStatus:                "wrong proposal vote status",
+		ErrorStatusCannotCommentOnProp:            "cannot comment on proposal",
+		ErrorStatusCannotVoteOnPropComment:        "cannot vote on proposal comment",
+		ErrorStatusChangeMessageCannotBeBlank:     "status change message cannot be blank",
+		ErrorStatusCensorReasonCannotBeBlank:      "censor comment reason cannot be blank",
+		ErrorStatusCannotCensorComment:            "cannot censor comment",
+		ErrorStatusUserNotAuthor:                  "user is not the proposal author",
+		ErrorStatusVoteNotAuthorized:              "vote has not been authorized",
+		ErrorStatusVoteAlreadyAuthorized:          "vote has already been authorized",
+		ErrorStatusInvalidAuthVoteAction:          "invalid authorize vote action",
+		ErrorStatusUserDeactivated:                "user account is deactivated",
+		ErrorStatusInvalidPropVoteBits:            "invalid proposal vote option bits",
+		ErrorStatusInvalidPropVoteParams:          "invalid proposal vote parameters",
+		ErrorStatusEmailNotVerified:               "email address is not verified",
+		ErrorStatusInvalidUUID:                    "invalid user UUID",
+		ErrorStatusInvalidLikeCommentAction:       "invalid like comment action",
+		ErrorStatusInvalidCensorshipToken:         "invalid proposal censorship token",
+		ErrorStatusEmailAlreadyVerified:           "email address is already verified",
+		ErrorStatusMalformedName:                  "malformed name",
+		ErrorStatusMalformedLocation:              "malformed location",
+		ErrorStatusInvoiceNotFound:                "invoice cannot be found",
+		ErrorStatusInvalidMonthYearRequest:        "month or year was set, while the other was not",
+		ErrorStatusInvalidInvoiceStatusTransition: "invalid invoice status transition",
+		ErrorStatusReasonNotProvided:              "reason for action not provided",
+		ErrorStatusMalformedInvoiceFile:           "submitted invoice file is malformed",
+		ErrorStatusInvoiceDuplicate:               "submitted invoice is a duplicate of an existing invoice",
 	}
 
 	// PropStatus converts propsal status codes to human readable text
@@ -462,6 +510,7 @@ type VersionReply struct {
 	Route   string `json:"route"`   // prefix to API calls
 	PubKey  string `json:"pubkey"`  // Server public key
 	TestNet bool   `json:"testnet"` // Network indicator
+	Mode    string `json:"mode"`    // current politeiawww mode running (piwww or cmswww)
 }
 
 // NewUser is used to request that a new user be created within the db.
@@ -684,7 +733,7 @@ type ProposalPaywallDetailsReply struct {
 }
 
 // ProposalPaywallPayment is used to request payment details for a pending
-// propsoal paywall payment.
+// proposal paywall payment.
 type ProposalPaywallPayment struct{}
 
 // ProposalPaywallPaymentReply is used to reply to the ProposalPaywallPayment
@@ -791,6 +840,13 @@ type PolicyReply struct {
 	ProposalNameSupportedChars []string `json:"proposalnamesupportedchars"`
 	MaxCommentLength           uint     `json:"maxcommentlength"`
 	BackendPublicKey           string   `json:"backendpublickey"`
+	MaxNameLength              uint     `json:"maxnamelength"`
+	MinNameLength              uint     `json:"minnamelength"`
+	MaxLocationLength          uint     `json:"maxlocationlength"`
+	MinLocationLength          uint     `json:"minlocationlength"`
+	InvoiceCommentChar         rune     `json:"invoicecommentchar"`
+	InvoiceFieldDelimiterChar  rune     `json:"invoicefielddelimiterchar"`
+	InvoiceLineItemCount       uint     `json:"invoicelineitemcount"`
 }
 
 // VoteOption describes a single vote option.
@@ -1084,6 +1140,9 @@ type User struct {
 	Identities                      []UserIdentity `json:"identities"`
 	ProposalCredits                 uint64         `json:"proposalcredits"`
 	EmailNotifications              uint64         `json:"emailnotifications"` // Notify the user via emails
+	Name                            string         `json:"name"`
+	Location                        string         `json:"location"`
+	ExtendedPublicKey               string         `json:"extpubkey"`
 }
 
 // UserIdentity represents a user's unique identity.

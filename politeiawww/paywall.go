@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	v1 "github.com/decred/politeia/politeiawww/api/v1"
+	www "github.com/decred/politeia/politeiawww/api/www/v1"
 	"github.com/decred/politeia/politeiawww/user"
 	"github.com/decred/politeia/util"
 	"github.com/google/uuid"
@@ -191,7 +191,7 @@ func (p *politeiawww) generateProposalPaywall(u *user.User) (*user.ProposalPaywa
 		return nil, err
 	}
 
-	p.addUserToPaywallPool(u, paywallTypeProposal)
+	p.addUserToPaywallPoolLock(u, paywallTypeProposal)
 	return &pp, nil
 }
 
@@ -283,8 +283,8 @@ func (p *politeiawww) SpendProposalCredit(u *user.User, token string) error {
 	}
 
 	if ProposalCreditBalance(u) == 0 {
-		return v1.UserError{
-			ErrorCode: v1.ErrorStatusNoProposalCredits,
+		return www.UserError{
+			ErrorCode: www.ErrorStatusNoProposalCredits,
 		}
 	}
 

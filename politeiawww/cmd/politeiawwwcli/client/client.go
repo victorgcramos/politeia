@@ -18,7 +18,8 @@ import (
 	"strings"
 
 	"github.com/decred/dcrwallet/rpc/walletrpc"
-	"github.com/decred/politeia/politeiawww/api/v1"
+	cms "github.com/decred/politeia/politeiawww/api/cms/v1"
+	"github.com/decred/politeia/politeiawww/api/www/v1"
 	"github.com/decred/politeia/util"
 	"github.com/gorilla/schema"
 	"golang.org/x/net/publicsuffix"
@@ -379,6 +380,52 @@ func (c *Client) Policy() (*v1.PolicyReply, error) {
 	return &pr, nil
 }
 
+// InviteNewUser creates a new cmswww user.
+func (c *Client) InviteNewUser(inu *cms.InviteNewUser) (*cms.InviteNewUserReply, error) {
+	responseBody, err := c.makeRequest("POST", cms.RouteInviteNewUser, inu)
+	if err != nil {
+		return nil, err
+	}
+
+	var inur cms.InviteNewUserReply
+	err = json.Unmarshal(responseBody, &inur)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal InviteNewUserReply: %v", err)
+	}
+
+	if c.cfg.Verbose {
+		err := prettyPrintJSON(inur)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &inur, nil
+}
+
+// RegisterUser finalizes the signup process for a new cmswww user.
+func (c *Client) RegisterUser(ru *cms.RegisterUser) (*cms.RegisterUserReply, error) {
+	responseBody, err := c.makeRequest("POST", cms.RouteRegisterUser, ru)
+	if err != nil {
+		return nil, err
+	}
+
+	var rur cms.RegisterUserReply
+	err = json.Unmarshal(responseBody, &rur)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal RegisterUserReply: %v", err)
+	}
+
+	if c.cfg.Verbose {
+		err := prettyPrintJSON(rur)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &rur, nil
+}
+
 // NewUser creates a new politeiawww user.
 func (c *Client) NewUser(nu *v1.NewUser) (*v1.NewUserReply, error) {
 	responseBody, err := c.makeRequest("POST", v1.RouteNewUser, nu)
@@ -612,6 +659,53 @@ func (c *Client) EditProposal(ep *v1.EditProposal) (*v1.EditProposalReply, error
 	return &epr, nil
 }
 
+// NewInvoice submits the specified invoice to politeiawww for the logged in
+// user.
+func (c *Client) NewInvoice(ni *cms.NewInvoice) (*cms.NewInvoiceReply, error) {
+	responseBody, err := c.makeRequest("POST", cms.RouteNewInvoice, ni)
+	if err != nil {
+		return nil, err
+	}
+
+	var nir cms.NewInvoiceReply
+	err = json.Unmarshal(responseBody, &nir)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal NewInvoiceReply: %v", err)
+	}
+
+	if c.cfg.Verbose {
+		err := prettyPrintJSON(nir)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &nir, nil
+}
+
+// EditInvoice edits the specified invoice with the logged in user.
+func (c *Client) EditInvoice(ei *cms.EditInvoice) (*cms.EditInvoiceReply, error) {
+	responseBody, err := c.makeRequest("POST", cms.RouteEditInvoice, ei)
+	if err != nil {
+		return nil, err
+	}
+
+	var eir cms.EditInvoiceReply
+	err = json.Unmarshal(responseBody, &eir)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal EditInvoiceReply: %v", err)
+	}
+
+	if c.cfg.Verbose {
+		err := prettyPrintJSON(eir)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &eir, nil
+}
+
 // ProposalDetails retrieves the specified proposal.
 func (c *Client) ProposalDetails(token string, pd *v1.ProposalsDetails) (*v1.ProposalDetailsReply, error) {
 	responseBody, err := c.makeRequest("GET", "/proposals/"+token, pd)
@@ -657,6 +751,54 @@ func (c *Client) UserProposals(up *v1.UserProposals) (*v1.UserProposalsReply, er
 	}
 
 	return &upr, nil
+}
+
+// UserInvoices retrieves the proposals that have been submitted by the
+// specified user.
+func (c *Client) UserInvoices(up *cms.UserInvoices) (*cms.UserInvoicesReply, error) {
+	responseBody, err := c.makeRequest("GET", cms.RouteUserInvoices, up)
+	if err != nil {
+		return nil, err
+	}
+
+	var upr cms.UserInvoicesReply
+	err = json.Unmarshal(responseBody, &upr)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal UserInvoicesReply: %v", err)
+	}
+
+	if c.cfg.Verbose {
+		err := prettyPrintJSON(upr)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &upr, nil
+}
+
+// AdminInvoices retrieves the proposals that have been submitted by the
+// specified user.
+func (c *Client) AdminInvoices(ai *cms.AdminInvoices) (*cms.AdminInvoicesReply, error) {
+	responseBody, err := c.makeRequest("POST", cms.RouteAdminInvoices, ai)
+	if err != nil {
+		return nil, err
+	}
+
+	var air cms.AdminInvoicesReply
+	err = json.Unmarshal(responseBody, &air)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal AdminInvoicesReply: %v", err)
+	}
+
+	if c.cfg.Verbose {
+		err := prettyPrintJSON(air)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &air, nil
 }
 
 // SetProposalStatus changes the status of the specified proposal.
@@ -1294,6 +1436,53 @@ func (c *Client) ResendVerification(rv v1.ResendVerification) (*v1.ResendVerific
 	}
 
 	return &rvr, nil
+}
+
+// InvoiceDetails retrieves the specified invoice.
+func (c *Client) InvoiceDetails(token string) (*cms.InvoiceDetailsReply, error) {
+	responseBody, err := c.makeRequest("GET", "/invoices/"+token, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var idr cms.InvoiceDetailsReply
+	err = json.Unmarshal(responseBody, &idr)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal InvoiceDetailsReply: %v", err)
+	}
+
+	if c.cfg.Verbose {
+		err := prettyPrintJSON(idr)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &idr, nil
+}
+
+// SetInvoiceStatus changes the status of the specified invoice.
+func (c *Client) SetInvoiceStatus(sis *cms.SetInvoiceStatus) (*cms.SetInvoiceStatusReply, error) {
+	route := "/invoices/" + sis.Token + "/status"
+	responseBody, err := c.makeRequest("POST", route, sis)
+	if err != nil {
+		return nil, err
+	}
+
+	var sisr cms.SetInvoiceStatusReply
+	err = json.Unmarshal(responseBody, &sisr)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal SetInvoiceStatusReply: %v", err)
+	}
+
+	if c.cfg.Verbose {
+		err := prettyPrintJSON(sisr)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &sisr, nil
 }
 
 // Close all client connections.
