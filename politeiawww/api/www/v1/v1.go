@@ -203,6 +203,7 @@ const (
 	ErrorStatusInvalidLikeCommentAction    ErrorStatusT = 57
 	ErrorStatusInvalidCensorshipToken      ErrorStatusT = 58
 	ErrorStatusEmailAlreadyVerified        ErrorStatusT = 59
+	ErrorStatusInvalidPassword						 ErrorStatusT = 81
 
 	// CMS Errors
 	ErrorStatusMalformedName                  ErrorStatusT = 60
@@ -401,6 +402,7 @@ var (
 		ErrorStatusMalformedSubdomain:             "line item has malformed subdomain",
 		ErrorStatusMalformedDescription:           "line item has malformed description",
 		ErrorStatusWrongInvoiceStatus:             "invoice is an wrong status to be editted (approved, rejected or paid)",
+		ErrorStatusInvalidPassword:								 "invalid password",
 	}
 
 	// PropStatus converts propsal status codes to human readable text
