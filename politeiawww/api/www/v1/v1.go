@@ -176,34 +176,34 @@ const (
 	ErrorStatusInvalidLikeCommentAction    ErrorStatusT = 57
 	ErrorStatusInvalidCensorshipToken      ErrorStatusT = 58
 	ErrorStatusEmailAlreadyVerified        ErrorStatusT = 59
-	ErrorStatusInvalidPassword             ErrorStatusT = 85
+	ErrorStatusInvalidPassword             ErrorStatusT = 60
 
 	// CMS Errors
-	ErrorStatusMalformedName                  ErrorStatusT = 60
-	ErrorStatusMalformedLocation              ErrorStatusT = 61
-	ErrorStatusInvoiceNotFound                ErrorStatusT = 62
-	ErrorStatusInvalidMonthYearRequest        ErrorStatusT = 63
-	ErrorStatusMalformedInvoiceFile           ErrorStatusT = 64
-	ErrorStatusInvalidInvoiceStatusTransition ErrorStatusT = 65
-	ErrorStatusReasonNotProvided              ErrorStatusT = 66
-	ErrorStatusInvoiceDuplicate               ErrorStatusT = 67
-	ErrorStatusInvalidPaymentAddress          ErrorStatusT = 68
-	ErrorStatusMalformedLineItem              ErrorStatusT = 69
-	ErrorStatusInvoiceMissingName             ErrorStatusT = 70
-	ErrorStatusInvoiceMissingLocation         ErrorStatusT = 71
-	ErrorStatusInvoiceMissingContact          ErrorStatusT = 72
-	ErrorStatusInvoiceMissingRate             ErrorStatusT = 73
-	ErrorStatusInvoiceInvalidRate             ErrorStatusT = 74
-	ErrorStatusInvoiceMalformedContact        ErrorStatusT = 75
-	ErrorStatusMalformedProposalToken         ErrorStatusT = 76
-	ErrorStatusMalformedDomain                ErrorStatusT = 77
-	ErrorStatusMalformedSubdomain             ErrorStatusT = 78
-	ErrorStatusMalformedDescription           ErrorStatusT = 79
-	ErrorStatusWrongInvoiceStatus             ErrorStatusT = 80
-	ErrorStatusInvoiceRequireLineItems        ErrorStatusT = 81
-	ErrorStatusMultipleInvoiceMonthYear       ErrorStatusT = 82
-	ErrorStatusInvalidInvoiceMonthYear        ErrorStatusT = 83
-	ErrorStatusInvalidExchangeRate            ErrorStatusT = 84
+	ErrorStatusMalformedName                  ErrorStatusT = 1000
+	ErrorStatusMalformedLocation              ErrorStatusT = 1001
+	ErrorStatusInvoiceNotFound                ErrorStatusT = 1002
+	ErrorStatusInvalidMonthYearRequest        ErrorStatusT = 1003
+	ErrorStatusMalformedInvoiceFile           ErrorStatusT = 1004
+	ErrorStatusInvalidInvoiceStatusTransition ErrorStatusT = 1005
+	ErrorStatusReasonNotProvided              ErrorStatusT = 1006
+	ErrorStatusInvoiceDuplicate               ErrorStatusT = 1007
+	ErrorStatusInvalidPaymentAddress          ErrorStatusT = 1008
+	ErrorStatusMalformedLineItem              ErrorStatusT = 1009
+	ErrorStatusInvoiceMissingName             ErrorStatusT = 1010
+	ErrorStatusInvoiceMissingLocation         ErrorStatusT = 1011
+	ErrorStatusInvoiceMissingContact          ErrorStatusT = 1012
+	ErrorStatusInvoiceMissingRate             ErrorStatusT = 1013
+	ErrorStatusInvoiceInvalidRate             ErrorStatusT = 1014
+	ErrorStatusInvoiceMalformedContact        ErrorStatusT = 1015
+	ErrorStatusMalformedProposalToken         ErrorStatusT = 1016
+	ErrorStatusMalformedDomain                ErrorStatusT = 1017
+	ErrorStatusMalformedSubdomain             ErrorStatusT = 1018
+	ErrorStatusMalformedDescription           ErrorStatusT = 1019
+	ErrorStatusWrongInvoiceStatus             ErrorStatusT = 1020
+	ErrorStatusInvoiceRequireLineItems        ErrorStatusT = 1021
+	ErrorStatusMultipleInvoiceMonthYear       ErrorStatusT = 1022
+	ErrorStatusInvalidInvoiceMonthYear        ErrorStatusT = 1023
+	ErrorStatusInvalidExchangeRate            ErrorStatusT = 1024
 
 	// Proposal state codes
 	//
