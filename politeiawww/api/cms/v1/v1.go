@@ -34,6 +34,35 @@ const (
 	InvoiceStatusApproved InvoiceStatusT = 6 // Invoice has been approved
 	InvoiceStatusPaid     InvoiceStatusT = 7 // Invoice has been paid
 
+	// CMS Errors
+	ErrorStatusMalformedName                  www.ErrorStatusT = 1000
+	ErrorStatusMalformedLocation              www.ErrorStatusT = 1001
+	ErrorStatusInvoiceNotFound                www.ErrorStatusT = 1002
+	ErrorStatusInvalidMonthYearRequest        www.ErrorStatusT = 1003
+	ErrorStatusMalformedInvoiceFile           www.ErrorStatusT = 1004
+	ErrorStatusInvalidInvoiceStatusTransition www.ErrorStatusT = 1005
+	ErrorStatusReasonNotProvided              www.ErrorStatusT = 1006
+	ErrorStatusInvoiceDuplicate               www.ErrorStatusT = 1007
+	ErrorStatusInvalidPaymentAddress          www.ErrorStatusT = 1008
+	ErrorStatusMalformedLineItem              www.ErrorStatusT = 1009
+	ErrorStatusInvoiceMissingName             www.ErrorStatusT = 1010
+	ErrorStatusInvoiceMissingLocation         www.ErrorStatusT = 1011
+	ErrorStatusInvoiceMissingContact          www.ErrorStatusT = 1012
+	ErrorStatusInvoiceMissingRate             www.ErrorStatusT = 1013
+	ErrorStatusInvoiceInvalidRate             www.ErrorStatusT = 1014
+	ErrorStatusInvoiceMalformedContact        www.ErrorStatusT = 1015
+	ErrorStatusMalformedProposalToken         www.ErrorStatusT = 1016
+	ErrorStatusMalformedDomain                www.ErrorStatusT = 1017
+	ErrorStatusMalformedSubdomain             www.ErrorStatusT = 1018
+	ErrorStatusMalformedDescription           www.ErrorStatusT = 1019
+	ErrorStatusWrongInvoiceStatus             www.ErrorStatusT = 1020
+	ErrorStatusInvoiceRequireLineItems        www.ErrorStatusT = 1021
+	ErrorStatusMultipleInvoiceMonthYear       www.ErrorStatusT = 1022
+	ErrorStatusInvalidInvoiceMonthYear        www.ErrorStatusT = 1023
+	ErrorStatusInvalidExchangeRate            www.ErrorStatusT = 1024
+	ErrorStatusInvalidLineItemType            www.ErrorStatusT = 1025
+	ErrorStatusInvalidLaborExpense            www.ErrorStatusT = 1026
+
 	// Line item types
 	LineItemTypeInvalid LineItemTypeT = 0 // Invalid type
 	LineItemTypeLabor   LineItemTypeT = 1 // Labor line items
@@ -119,6 +148,34 @@ var (
 	// contact for registering users on cms.
 	PolicyCMSContactSupportedChars = []string{
 		"A-z", "0-9", "&", ".", ":", "-", "_", "@", "+", ",", " "}
+
+	ErrorStatus = map[www.ErrorStatusT]string{
+		ErrorStatusMalformedName:                  "malformed name",
+		ErrorStatusMalformedLocation:              "malformed location",
+		ErrorStatusInvoiceNotFound:                "invoice cannot be found",
+		ErrorStatusInvalidMonthYearRequest:        "month or year was set, while the other was not",
+		ErrorStatusInvalidInvoiceStatusTransition: "invalid invoice status transition",
+		ErrorStatusReasonNotProvided:              "reason for action not provided",
+		ErrorStatusMalformedInvoiceFile:           "submitted invoice file is malformed",
+		ErrorStatusInvoiceDuplicate:               "submitted invoice is a duplicate of an existing invoice",
+		ErrorStatusInvalidPaymentAddress:          "invalid payment address",
+		ErrorStatusMalformedLineItem:              "malformed line item submitted",
+		ErrorStatusInvoiceMissingName:             "invoice missing contractor name",
+		ErrorStatusInvoiceMissingLocation:         "invoice missing contractor location",
+		ErrorStatusInvoiceMissingContact:          "invoice missing contractor contact",
+		ErrorStatusInvoiceMalformedContact:        "invoice has malformed contractor contact",
+		ErrorStatusInvoiceMissingRate:             "invoice missing contractor rate",
+		ErrorStatusInvoiceInvalidRate:             "invoice has invalid contractor rate",
+		ErrorStatusMalformedProposalToken:         "line item has malformed proposal token",
+		ErrorStatusMalformedDomain:                "line item has malformed domain",
+		ErrorStatusMalformedSubdomain:             "line item has malformed subdomain",
+		ErrorStatusMalformedDescription:           "line item has malformed description",
+		ErrorStatusWrongInvoiceStatus:             "invoice is an wrong status to be editted (approved, rejected or paid)",
+		ErrorStatusInvoiceRequireLineItems:        "invoices require at least 1 line item",
+		ErrorStatusMultipleInvoiceMonthYear:       "only one invoice per month/year is allowed to be submitted",
+		ErrorStatusInvalidInvoiceMonthYear:        "an invalid month/year was submitted on an invoice",
+		ErrorStatusInvalidExchangeRate:            "exchange rate was invalid or didn't match expected result",
+	}
 )
 
 /// Contractor Management System Routes
