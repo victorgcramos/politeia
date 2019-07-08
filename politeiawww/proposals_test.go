@@ -154,6 +154,35 @@ func createNewProposal(t *testing.T, id *identity.FullIdentity, files []www.File
 	}
 }
 
+func editProposal(t *testing.T, token string, id *identity.FullIdentity, files []www.File) *www.EditProposal {
+	t.Helper()
+
+	if len(files) == 0 {
+		t.Fatalf("no files found")
+	}
+
+	// Compute merkle
+	digests := make([]*[sha256.Size]byte, 0, len(files))
+	for _, f := range files {
+		d, ok := util.ConvertDigest(f.Digest)
+		if !ok {
+			t.Fatalf("could not convert digest %v", f.Digest)
+		}
+		digests = append(digests, &d)
+	}
+	root := hex.EncodeToString(merkle.Root(digests)[:])
+
+	// Sign merkle
+	sig := id.SignMessage([]byte(root))
+
+	return &www.EditProposal{
+		Token:     token,
+		Files:     files,
+		PublicKey: hex.EncodeToString(id.Public.Key[:]),
+		Signature: hex.EncodeToString(sig[:]),
+	}
+}
+
 // merkleRoot returns a hex encoded merkle root of the passed in files.
 func merkleRoot(t *testing.T, files []www.File) string {
 	t.Helper()
@@ -1296,4 +1325,172 @@ func TestProcessAllUnvetted(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProcessEditProposal(t *testing.T) {
+	// Setup test environment
+	p, cleanup := newTestPoliteiawww(t)
+	defer cleanup()
+
+	d := newTestPoliteiad(t, p)
+	defer d.Close()
+
+	// Create a regular user
+	u, uid := newUser(t, p, true, false)
+
+	// Create an admin user
+	admin, aid := newUser(t, p, true, true)
+
+	// Create a not Author user
+	nau, _ := newUser(t, p, true, false)
+
+	f := newFileRandomMD(t)
+	files := []www.File{f}
+
+	// Create and edit a public proposal
+	propPublic := newProposalRecord(t, u, uid, www.PropStatusPublic)
+	d.AddRecord(t, convertPropToPD(t, propPublic))
+	ppToken := propPublic.CensorshipRecord.Token
+	epp := editProposal(t, ppToken,
+		uid, files)
+
+	// Create and edit an abandoned proposal
+	propAbnd := newProposalRecord(t, u, uid, www.PropStatusAbandoned)
+	d.AddRecord(t, convertPropToPD(t, propAbnd))
+	epa := editProposal(t, propAbnd.CensorshipRecord.Token,
+		uid, files)
+
+	// Create and edit a censored proposal
+	propCnsr := newProposalRecord(t, u, uid, www.PropStatusCensored)
+	d.AddRecord(t, convertPropToPD(t, propCnsr))
+	epcn := editProposal(t, propCnsr.CensorshipRecord.Token,
+		uid, files)
+
+	// Create and edit a proposal whose vote has been authorized
+	propVoteAuthorized := newProposalRecord(t, admin, aid, www.PropStatusPublic)
+	tokenVoteAuthorized := propVoteAuthorized.CensorshipRecord.Token
+	statusPublic := strconv.Itoa(int(www.PropStatusPublic))
+	d.AddRecord(t, convertPropToPD(t, propVoteAuthorized))
+	cmd := newAuthorizeVoteCmd(t, tokenVoteAuthorized,
+		propVoteAuthorized.Version, decredplugin.AuthVoteActionAuthorize, aid)
+	d.Plugin(t, cmd)
+	msg := fmt.Sprintf("%s%s%s", tokenVoteAuthorized,
+		statusPublic, "authorize")
+	s := aid.SignMessage([]byte(msg))
+	sigVoteAuthorized := hex.EncodeToString(s[:])
+	epva := editProposal(t, tokenVoteAuthorized,
+		aid, files)
+	// fmt.Printf("%v %v\n", sigVoteAuthorized, epva.Signature)
+
+	// Create and edit a proposal with no changes
+	epnc := editProposal(t, ppToken, uid, epp.Files)
+
+	// Setup tests
+	var tests = []struct {
+		name string
+		usr  *user.User
+		eps  www.EditProposal
+		want error
+	}{
+		{"edit proposal with an invalid token", u,
+			www.EditProposal{
+				Token:     "abc",
+				Files:     epp.Files,
+				Signature: epp.Signature,
+				PublicKey: u.PublicKey(),
+			},
+			www.UserError{
+				ErrorCode: www.ErrorStatusProposalNotFound,
+			}},
+
+		{"edit an abandoned proposal", u,
+			www.EditProposal{
+				Token:     epa.Token,
+				Files:     epa.Files,
+				Signature: epa.Signature,
+				PublicKey: u.PublicKey(),
+			},
+			www.UserError{
+				ErrorCode: www.ErrorStatusWrongStatus,
+			}},
+
+		{"edit a censored proposal", u,
+			www.EditProposal{
+				Token:     epcn.Token,
+				Files:     epcn.Files,
+				Signature: epcn.Signature,
+				PublicKey: u.PublicKey(),
+			},
+			www.UserError{
+				ErrorCode: www.ErrorStatusWrongStatus,
+			}},
+
+		{"edit a proposal without being the author", nau,
+			www.EditProposal{
+				Token:     epp.Token,
+				Files:     epp.Files,
+				Signature: epp.Signature,
+				PublicKey: u.PublicKey(),
+			},
+			www.UserError{
+				ErrorCode: www.ErrorStatusUserNotAuthor,
+			}},
+
+		{"edit a proposal whose vote has been authorized", admin,
+			www.EditProposal{
+				Token:     epva.Token,
+				Files:     epva.Files,
+				Signature: sigVoteAuthorized,
+				PublicKey: admin.PublicKey(),
+			},
+			www.UserError{
+				ErrorCode: www.ErrorStatusWrongVoteStatus,
+			}},
+
+		{"edit a proposal with no changes", u,
+			www.EditProposal{
+				Token:     epnc.Token,
+				Files:     epnc.Files,
+				Signature: epva.Signature,
+				PublicKey: u.PublicKey(),
+			},
+			www.UserError{
+				ErrorCode: www.ErrorStatusNoProposalChanges,
+			}},
+
+		{"Success", u,
+			www.EditProposal{
+				Token:     epp.Token,
+				Files:     epp.Files,
+				Signature: epp.Signature,
+				PublicKey: u.PublicKey(),
+			}, nil},
+	}
+
+	for _, v := range tests {
+		t.Run(v.name, func(t *testing.T) {
+			ep, err := p.processEditProposal(v.eps, v.usr)
+			got := errToStr(err)
+			want := errToStr(v.want)
+			// t.Log(got, want)
+			// t.Errorf("got error %v, want %v",
+			// 	got, want)
+
+			if got != want {
+				t.Errorf("got error %v, want %v",
+					got, want)
+			}
+
+			if v.want != nil {
+				// Test case passes
+				return
+			}
+
+			// Validate success case
+			if ep == nil {
+				t.Errorf("NewProposalReply is nil")
+			}
+		})
+	}
+
 }
