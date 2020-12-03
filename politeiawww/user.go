@@ -2396,7 +2396,7 @@ func (p *politeiawww) totpCheck(code string, u *user.User) error {
 
 	// Verify the provided code matches the generated code
 	var replyError error
-	if currentCode == code {
+	if valid, _ := p.totpValidate(code, u.TOTPSecret, requestTime); valid == true {
 		// The code matches. Clear out all previous failed attempts
 		// before returning.
 		u.TOTPLastFailedCodeTime = []int64{}
