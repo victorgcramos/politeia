@@ -68,10 +68,10 @@ func (cmd *subscribeCmd) Execute(args []string) error {
 	fmt.Printf("connecting to %s\n", uu.String())
 
 	ws, _, err := d.Dial(uu.String(), nil)
+	defer ws.Close()
 	if err != nil {
 		return err
 	}
-	defer ws.Close()
 
 	err = shared.PrintJSON(v1.WSHeader{Command: v1.WSCSubscribe, ID: "1"})
 	if err != nil {
